@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "target": "encuesta", // <--- AÑADE ESTA LÍNEA
+    "public": ".",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

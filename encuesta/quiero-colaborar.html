@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiero Colaborar - Sistema de Encuestas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>Solicitud de Colaborador</h1>
+            <p class="subtitle">
+                Complete este formulario para solicitar convertirse en colaborador oficial. 
+                Los colaboradores pueden realizar encuestas que se integran al sistema general.
+            </p>
+            
+            <form id="collaboration-form" class="local-form">
+                <label for="collab-nombre">Nombre Completo:</label>
+                <input type="text" id="collab-nombre" required style="text-transform: uppercase;">
+
+                <label for="collab-email">Correo Electrónico:</label>
+                <input type="email" id="collab-email" required>
+
+                <label for="collab-telefono">Teléfono/WhatsApp:</label>
+                <input type="tel" id="collab-telefono" required>
+
+                <label for="collab-departamento">Departamento donde colaborará:</label>
+                <select id="collab-departamento" required>
+                    <option value="" disabled selected>Seleccione un departamento...</option>
+                    <option value="LA PAZ">LA PAZ</option>
+                    <option value="COCHABAMBA">COCHABAMBA</option>
+                    <option value="SANTA CRUZ">SANTA CRUZ</option>
+                    <option value="ORURO">ORURO</option>
+                    <option value="POTOSÍ">POTOSÍ</option>
+                    <option value="CHUQUISACA">CHUQUISACA</option>
+                    <option value="TARIJA">TARIJA</option>
+                    <option value="BENI">BENI</option>
+                    <option value="PANDO">PANDO</option>
+                </select>
+
+                <label for="collab-provincia">Provincia/Municipio:</label>
+                <input type="text" id="collab-provincia" required style="text-transform: uppercase;" 
+                       placeholder="Ej: MURILLO, CERCADO, etc.">
+
+                <label for="collab-experiencia">Experiencia en encuestas/investigación (Opcional):</label>
+                <textarea id="collab-experiencia" rows="3" 
+                          placeholder="Describa brevemente su experiencia..."></textarea>
+
+                <label for="collab-motivacion">¿Por qué quiere ser colaborador?</label>
+                <textarea id="collab-motivacion" rows="4" required 
+                          placeholder="Explique su motivación para participar en este proyecto cívico..."></textarea>
+
+                <label for="collab-disponibilidad">Disponibilidad semanal estimada:</label>
+                <select id="collab-disponibilidad" required>
+                    <option value="" disabled selected>Seleccione...</option>
+                    <option value="1-5 HORAS">1-5 horas por semana</option>
+                    <option value="6-10 HORAS">6-10 horas por semana</option>
+                    <option value="11-20 HORAS">11-20 horas por semana</option>
+                    <option value="MÁS DE 20 HORAS">Más de 20 horas por semana</option>
+                </select>
+
+                <label for="collab-redes">Enlaces de redes sociales (Opcional):</label>
+                <input type="url" id="collab-redes" 
+                       placeholder="https://facebook.com/tu-perfil o https://tiktok.com/@tu-usuario">
+
+                <div style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #007bff; border-radius: 5px;">
+                    <p><strong>Compromiso del Colaborador:</strong></p>
+                    <p style="font-size: 0.9em; line-height: 1.4;">
+                        Al enviar esta solicitud, me comprometo a realizar encuestas de manera ética, 
+                        imparcial y transparente, siguiendo las metodologías establecidas por el proyecto. 
+                        Entiendo que mis datos serán registrados y que podré ser contactado para 
+                        coordinación de actividades.
+                    </p>
+                </div>
+
+                <button type="submit" id="submit-btn">Enviar Solicitud</button>
+            </form>
+
+            <div id="form-status" class="admin-status"></div>
+        </div>
+    </div>
+    
+    <footer id="footer-placeholder" class="site-footer"></footer>
+    
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="include-footer.js"></script>
+    
+    <script>
+        // Configuración Firebase (usar la misma de app.js)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBD-xQh9223xKez9wBqK2KJOGqF9yZjFo",
+            authDomain: "encuesta-f2a28.firebaseapp.com",
+            databaseURL: "https://encuesta-f2a28-default-rtdb.firebaseio.com",
+            projectId: "encuesta-f2a28",
+            storageBucket: "encuesta-f2a28.appspot.com",
+            messagingSenderId: "491969168385",
+            appId: "1:491969168385:web:f7b989b9aaf8562fd7ac00"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const collaborationRequestsRef = database.ref('collaboration_requests');
+
+        document.getElementById('collaboration-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const statusDiv = document.getElementById('form-status');
+            
+            // Deshabilitar botón durante envío
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+            statusDiv.innerHTML = '';
+
+            // Recopilar datos del formulario
+            const collaborationData = {
+                nombre: document.getElementById('collab-nombre').value,
+                email: document.getElementById('collab-email').value,
+                telefono: document.getElementById('collab-telefono').value,
+                departamento: document.getElementById('collab-departamento').value,
+                provincia: document.getElementById('collab-provincia').value,
+                experiencia: document.getElementById('collab-experiencia').value,
+                motivacion: document.getElementById('collab-motivacion').value,
+                disponibilidad: document.getElementById('collab-disponibilidad').value,
+                redes: document.getElementById('collab-redes').value,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                status: 'PENDIENTE',
+                fecha_solicitud: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+            };
+
+            // Enviar a Firebase
+            collaborationRequestsRef.push(collaborationData)
+                .then(() => {
+                    statusDiv.innerHTML = '<div style="color: green; background-color: #d4edda; padding: 15px; border-radius: 5px; margin-top: 20px;"><strong>¡Solicitud enviada exitosamente!</strong><br>Recibirás una respuesta por correo electrónico en los próximos días. Gracias por tu interés en colaborar.</div>';
+                    
+                    // Resetear formulario
+                    document.getElementById('collaboration-form').reset();
+                    
+                    // Scroll hacia el mensaje de éxito
+                    statusDiv.scrollIntoView({ behavior: 'smooth' });
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    statusDiv.innerHTML = '<div style="color: red; background-color: #f8d7da; padding: 15px; border-radius: 5px; margin-top: 20px;"><strong>Error al enviar la solicitud.</strong><br>Por favor, inténtelo nuevamente.</div>';
+                })
+                .finally(() => {
+                    // Rehabilitar botón
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Enviar Solicitud';
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="300">
+    <title>Resultados de la Encuesta</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .tab-button {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+        
+        .tab-button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+        
+        .tab-button.active:hover {
+            background: #0056b3;
+        }
+        
+        .view-content {
+            display: none;
+        }
+        
+        .view-content.active {
+            display: block;
+        }
+        
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+            display: block;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .department-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .department-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .department-card h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .comparison-chart {
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .collaborator-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .collaborator-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #28a745;
+        }
+        
+        .collaborator-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .mini-chart {
+            height: 200px;
+            margin-top: 10px;
+        }
+        
+        .winner-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .winner-badge h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+        }
+        
+        .winner-badge .percentage {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        
+        .loading-overlay {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="container">
+        <h2>Resultados de la Encuesta en Vivo</h2>
+        
+        <!-- Tabs de navegación -->
+        <div class="view-tabs">
+            <button class="tab-button active" data-view="general">
+                <i class="fas fa-chart-bar"></i> Vista General
+            </button>
+            <button class="tab-button" data-view="comparativa">
+                <i class="fas fa-balance-scale"></i> Comparativa
+            </button>
+            <button class="tab-button" data-view="colaboradores">
+                <i class="fas fa-users"></i> Por Colaborador
+            </button>
+            <button class="tab-button" data-view="departamentos">
+                <i class="fas fa-map-marked-alt"></i> Por Departamento
+            </button>
+            <button class="tab-button" data-view="mapa">
+                <i class="fas fa-map"></i> Mapa
+            </button>
+        </div>
+
+        <!-- VISTA GENERAL -->
+        <div id="view-general" class="view-content active">
+            <div class="ballot non-interactive">
+                <div class="candidate-strip">
+                    <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/PDC_FRANJA_uy0zel.png" alt="Papeleta PDC Rodrigo Paz">
+                </div>
+                <div class="candidate-strip">
+                    <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/LIBRE_FRANJA_sr4686.png" alt="Papeleta LIBRE Tuto Quiroga">
+                </div>
+            </div>
+
+            <div class="other-options">
+                <button disabled>Voto en Blanco</button>
+                <button disabled>Voto Nulo</button>
+                <button disabled>NS / NR</button>
+            </div>
+
+            <div class="stats-summary">
+                <div class="stat-box">
+                    <span class="stat-value" id="total-general">0</span>
+                    <span class="stat-label">Total Votos</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="total-oficial">0</span>
+                    <span class="stat-label">Votos Oficiales</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="total-colaborativo">0</span>
+                    <span class="stat-label">Votos Colaborativos</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="total-colaboradores">0</span>
+                    <span class="stat-label">Colaboradores Activos</span>
+                </div>
+            </div>
+
+            <div id="winner-section"></div>
+
+            <div class="results-container">
+                <h2>Resultados Consolidados</h2>
+                <canvas id="generalChart"></canvas>
+                <div id="general-votes-text"></div>
+                <button id="share-general" class="share-button">Compartir Gráfica</button>
+            </div>
+        </div>
+
+        <!-- VISTA COMPARATIVA -->
+        <div id="view-comparativa" class="view-content">
+            <div class="comparison-chart">
+                <h2>Comparación: Oficial vs Colaborativo</h2>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+            
+            <div class="stats-summary">
+                <div class="stat-box">
+                    <span class="stat-value" id="diff-candidato-a">0%</span>
+                    <span class="stat-label">Diferencia PDC</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value" id="diff-candidato-b">0%</span>
+                    <span class="stat-label">Diferencia LIBRE</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA COLABORADORES -->
+        <div id="view-colaboradores" class="view-content">
+            <h2>Resultados por Colaborador</h2>
+            <div id="collaborators-results" class="collaborator-list">
+                <div class="loading-overlay">Cargando datos de colaboradores...</div>
+            </div>
+        </div>
+
+        <!-- VISTA DEPARTAMENTOS -->
+        <div id="view-departamentos" class="view-content">
+            <h2>Resultados por Departamento</h2>
+            <div id="departments-results" class="department-results">
+                <div class="loading-overlay">Cargando datos por departamento...</div>
+            </div>
+        </div>
+
+        <!-- VISTA MAPA -->
+        <div id="view-mapa" class="view-content">
+            <div class="map-container">
+                <h2>Puntos de Encuesta</h2>
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <div class="social-media">
+            <h3>Sigue la transmisión LIVE:</h3>
+            <a href="https://tiktok.com/" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="https://facebook.com/" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="https://youtube.com/" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+        </div>
+    </div>
+</div>
+
+<footer id="footer-placeholder" class="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="include-footer.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBD-xQh9223xKez9wBqK2KJOGqF9yZjFo",
+        authDomain: "encuesta-f2a28.firebaseapp.com",
+        databaseURL: "https://encuesta-f2a28-default-rtdb.firebaseio.com",
+        projectId: "encuesta-f2a28",
+        storageBucket: "encuesta-f2a28.appspot.com",
+        messagingSenderId: "491969168385",
+        appId: "1:491969168385:web:f7b989b9aaf8562fd7ac00"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    const votesRef = database.ref('votes');
+    const collabVotesRef = database.ref('collaborative_votes');
+    const approvedRef = database.ref('approved_collaborators');
+    const locationsRef = database.ref('locations');
+
+    Chart.register(ChartDataLabels);
+
+    let charts = {
+        general: null,
+        comparison: null,
+        collaborators: {},
+        departments: {}
+    };
+
+    let allData = {
+        official: null,
+        collaborative: null,
+        collaboratorsInfo: null
+    };
+
+    function processAllViews() {
+        if (!allData.official || !allData.collaborative || !allData.collaboratorsInfo) {
+            return;
+        }
+        updateGeneralView();
+        updateComparativeView();
+        updateCollaboratorsView();
+        updateDepartmentsView();
+    }
+
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            switchView(this.dataset.view);
+        });
+    });
+
+    function switchView(view) {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-view="${view}"]`).classList.add('active');
+        
+        document.querySelectorAll('.view-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`view-${view}`).classList.add('active');
+        
+        if (view === 'mapa' && !document.getElementById('map')._leaflet_id) {
+            initializeMap();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        votesRef.on('value', (snapshot) => {
+            allData.official = snapshot.val() || {};
+            processAllViews();
+        });
+
+        collabVotesRef.on('value', (snapshot) => {
+            allData.collaborative = snapshot.val() || {};
+            processAllViews();
+        });
+
+        approvedRef.on('value', (snapshot) => {
+            allData.collaboratorsInfo = snapshot.val() || {};
+            processAllViews();
+        });
+    });
+
+    function getAggregatedVotes(votesObject) {
+        const aggregated = { candidato_a: 0, candidato_b: 0, blancos: 0, nulos: 0, nsnr: 0 };
+        for (const collabId in votesObject) {
+            const votes = votesObject[collabId];
+            for (const key in votes) {
+                aggregated[key] = (aggregated[key] || 0) + (votes[key] || 0);
+            }
+        }
+        return aggregated;
+    }
+
+    function updateGeneralView() {
+        const collabAggregated = getAggregatedVotes(allData.collaborative);
+        const consolidated = {
+            candidato_a: (allData.official.candidato_a || 0) + collabAggregated.candidato_a,
+            candidato_b: (allData.official.candidato_b || 0) + collabAggregated.candidato_b,
+            blancos: (allData.official.blancos || 0) + collabAggregated.blancos,
+            nulos: (allData.official.nulos || 0) + collabAggregated.nulos,
+            nsnr: (allData.official.nsnr || 0) + collabAggregated.nsnr
+        };
+        
+        const totalOfficial = Object.values(allData.official).reduce((s, v) => s + v, 0);
+        const totalCollab = Object.values(collabAggregated).reduce((s, v) => s + v, 0);
+        const totalGeneral = totalOfficial + totalCollab;
+        
+        document.getElementById('total-general').textContent = totalGeneral;
+        document.getElementById('total-oficial').textContent = totalOfficial;
+        document.getElementById('total-colaborativo').textContent = totalCollab;
+        document.getElementById('total-colaboradores').textContent = Object.keys(allData.collaboratorsInfo).length;
+        
+        if (totalGeneral > 0) {
+            const pctA = (consolidated.candidato_a / totalGeneral * 100).toFixed(1);
+            const pctB = (consolidated.candidato_b / totalGeneral * 100).toFixed(1);
+            let winnerHTML = '';
+            if (consolidated.candidato_a > consolidated.candidato_b) {
+                winnerHTML = `<div class="winner-badge"><h3>🏆 Liderazgo Actual</h3><div class="percentage">${pctA}%</div><div>PDC Rodrigo Paz y Edmand Lara</div></div>`;
+            } else if (consolidated.candidato_b > consolidated.candidato_a) {
+                winnerHTML = `<div class="winner-badge"><h3>🏆 Liderazgo Actual</h3><div class="percentage">${pctB}%</div><div>LIBRE Tuto Quiroga y Juan Pablo Velasco</div></div>`;
+            } else {
+                winnerHTML = `<div class="winner-badge"><h3>🤝 Empate Técnico</h3><div>Ambos candidatos tienen ${pctA}%</div></div>`;
+            }
+            document.getElementById('winner-section').innerHTML = winnerHTML;
+        }
+        
+        updateChart('general', 'generalChart', consolidated);
+        document.getElementById('general-votes-text').textContent = `Total de encuestados: ${totalGeneral} (Oficial: ${totalOfficial}, Colaborativo: ${totalCollab})`;
+    }
+
+    function updateComparativeView() {
+        if (!charts.comparison) {
+            charts.comparison = new Chart(document.getElementById('comparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['PDC Rodrigo Paz', 'LIBRE Tuto Quiroga', 'Blancos', 'Nulos', 'NS/NR'],
+                    datasets: [
+                        { label: 'Votos Oficiales', data: [], backgroundColor: 'rgba(54, 162, 235, 0.7)' },
+                        { label: 'Votos Colaborativos', data: [], backgroundColor: 'rgba(40, 167, 69, 0.7)' }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { display: true }, datalabels: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+        
+        const officialData = Object.values(allData.official);
+        const collabAggregated = getAggregatedVotes(allData.collaborative);
+        const collabData = Object.values(collabAggregated);
+        
+        charts.comparison.data.datasets[0].data = officialData;
+        charts.comparison.data.datasets[1].data = collabData;
+        charts.comparison.update();
+    }
+
+    function updateCollaboratorsView() {
+        const container = document.getElementById('collaborators-results');
+        container.innerHTML = '';
+        
+        if (Object.keys(allData.collaborative).length === 0) {
+            container.innerHTML = '<div class="loading-overlay">No hay datos de colaboradores aún.</div>';
+            return;
+        }
+        
+        for (const collabId in allData.collaborative) {
+            const votes = allData.collaborative[collabId];
+            const info = allData.collaboratorsInfo[collabId];
+            if (!info) continue;
+            
+            const total = Object.values(votes).reduce((s, v) => s + v, 0);
+            const card = document.createElement('div');
+            card.className = 'collaborator-item';
+            // --- CORRECCIÓN: Usar info.municipio en lugar de info.provincia ---
+            card.innerHTML = `<h4>${info.nombre}</h4><p>📍 ${info.municipio || 'N/A'}, ${info.departamento || 'N/A'}</p><p><strong>Total: ${total} votos</strong></p><canvas id="chart-${collabId}" class="mini-chart"></canvas>`;
+            container.appendChild(card);
+            
+            // --- CORRECCIÓN: Esperar a que la tarjeta esté en el DOM para crear la gráfica ---
+            setTimeout(() => {
+                if (charts.collaborators[collabId]) {
+                    charts.collaborators[collabId].destroy();
+                }
+                charts.collaborators[collabId] = createMiniChart(`chart-${collabId}`, votes);
+            }, 0);
+        }
+    }
+
+    function updateDepartmentsView() {
+        const container = document.getElementById('departments-results');
+        container.innerHTML = '';
+        const departments = {};
+
+        for (const collabId in allData.collaborative) {
+            const info = allData.collaboratorsInfo[collabId];
+            if (!info) continue;
+            
+            const dept = info.departamento;
+            if (!departments[dept]) {
+                departments[dept] = { candidato_a: 0, candidato_b: 0, blancos: 0, nulos: 0, nsnr: 0 };
+            }
+            
+            const votes = allData.collaborative[collabId];
+            for (const key in votes) {
+                departments[dept][key] += votes[key] || 0;
+            }
+        }
+
+        if (Object.keys(departments).length === 0) {
+            container.innerHTML = '<div class="loading-overlay">No hay datos por departamento aún.</div>';
+            return;
+        }
+        
+        Object.keys(departments).sort().forEach(dept => {
+            const votes = departments[dept];
+            const total = Object.values(votes).reduce((s, v) => s + v, 0);
+            const card = document.createElement('div');
+            card.className = 'department-card';
+            card.innerHTML = `<h3>${dept}</h3><p><strong>Total: ${total} votos</strong></p><canvas id="chart-dept-${dept}" style="height: 250px;"></canvas>`;
+            container.appendChild(card);
+            
+            setTimeout(() => {
+                if (charts.departments[dept]) {
+                    charts.departments[dept].destroy();
+                }
+                charts.departments[dept] = createMiniChart(`chart-dept-${dept}`, votes);
+            }, 0);
+        });
+    }
+
+    function updateChart(chartKey, canvasId, data) {
+        const sortedData = Object.entries(data).map(([key, value]) => ({ key, value }))
+            .sort((a, b) => b.value - a.value);
+        
+        const labels = {
+            candidato_a: 'PDC Rodrigo Paz', candidato_b: 'LIBRE Tuto Quiroga',
+            blancos: 'Blancos', nulos: 'Nulos', nsnr: 'NS / NR'
+        };
+        const colors = {
+            candidato_a: '#2F695F', candidato_b: '#D32F2F',
+            blancos: '#FFFFFF', nulos: '#757575', nsnr: '#ffc107'
+        };
+
+        if (!charts[chartKey]) {
+            charts[chartKey] = new Chart(document.getElementById(canvasId), {
+                type: 'bar',
+                data: {
+                    labels: sortedData.map(item => labels[item.key]),
+                    datasets: [{
+                        label: 'Votos',
+                        data: sortedData.map(item => item.value),
+                        backgroundColor: sortedData.map(item => colors[item.key]),
+                        borderColor: '#BDBDBD', borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: 'blue', anchor: 'start', align: 'end', offset: 8,
+                            formatter: (value, context) => {
+                                const total = context.chart.data.datasets[0].data.reduce((s, v) => s + v, 0);
+                                return total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%';
+                            },
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        } else {
+            charts[chartKey].data.labels = sortedData.map(item => labels[item.key]);
+            charts[chartKey].data.datasets[0].data = sortedData.map(item => item.value);
+            charts[chartKey].data.datasets[0].backgroundColor = sortedData.map(item => colors[item.key]);
+            charts[chartKey].update();
+        }
+    }
+
+    function createMiniChart(canvasId, data) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null; // Si el canvas no existe, no hacer nada
+        return new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['PDC', 'LIBRE', 'Blancos', 'Nulos', 'NS/NR'],
+                datasets: [{
+                    data: [data.candidato_a || 0, data.candidato_b || 0, data.blancos || 0, data.nulos || 0, data.nsnr || 0],
+                    backgroundColor: ['#2F695F', '#D32F2F', '#FFFFFF', '#757575', '#ffc107'],
+                    borderWidth: 1
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } } }
+        });
+    }
+
+    function initializeMap() {
+        const map = L.map('map').setView([-16.5, -64.5], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        
+        locationsRef.on('child_added', (snapshot) => {
+            const location = snapshot.val();
+            if (location.lat && location.lng && allData.collaboratorsInfo && allData.collaboratorsInfo[location.uid]) {
+                L.marker([location.lat, location.lng]).addTo(map)
+                    .bindPopup(`<strong>${allData.collaboratorsInfo[location.uid].nombre || 'Encuesta oficial'}</strong><br>${new Date(location.timestamp).toLocaleString()}`);
+            }
+        });
+    }
+
+    document.getElementById('share-general').addEventListener('click', function() {
+        const canvas = document.getElementById('generalChart');
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height + 100;
+        
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        tempCtx.fillStyle = 'black';
+        tempCtx.font = 'bold 20px sans-serif';
+        tempCtx.textAlign = 'center';
+        tempCtx.fillText('Resultados Consolidados - Sondeo General', tempCanvas.width / 2, tempCanvas.height - 60);
+        
+        const pageLink = window.location.href.replace('.html', '');
+        tempCtx.font = '14px sans-serif';
+        tempCtx.fillText(`Ver resultados en vivo: ${pageLink}`, tempCanvas.width / 2, tempCanvas.height - 30);
+
+        tempCanvas.toBlob(async function(blob) {
+            try {
+                const file = new File([blob], 'resultados-generales.png', { type: 'image/png' });
+                if (navigator.share) {
+                    await navigator.share({
+                        title: 'Resultados Consolidados del Sondeo',
+                        text: 'Estos son los resultados consolidados (oficial + colaborativo) en tiempo real.',
+                        files: [file]
+                    });
+                } else {
+                    alert("La función de compartir no es compatible con este navegador.");
+                }
+            } catch (error) {
+                console.error('Error al compartir:', error);
+            }
+        }, 'image/png');
+    });
+</script>
+</body>
+</html>

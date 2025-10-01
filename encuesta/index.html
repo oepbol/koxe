@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¿Por quién va ha votar?</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div id="login-container" class="login-container">
+    <div class="login-box">
+        <h2>Acceso de Encuestador</h2>
+        <form id="login-form">
+            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+            <p id="login-error" class="login-error"></p>
+        </form>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <div class="container">
+        <h2>¿Por quién va ha votar?</h2>
+        <div class="ballot">
+            <!-- Franja A -->
+            <div class="candidate-strip" data-vote="candidato_a" data-name="PDC Rodrigo Paz">
+                <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/PDC_FRANJA_uy0zel.png" alt="Papeleta PDC Rodrigo Paz">
+                <span class="x-mark" id="x-mark-candidato_a">X</span>
+            </div>
+
+            <!-- Franja B -->
+            <div class="candidate-strip" data-vote="candidato_b" data-name="LIBRE Tuto Quiroga">
+                <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/LIBRE_FRANJA_sr4686.png" alt="Papeleta LIBRE Tuto Quiroga">
+                <span class="x-mark" id="x-mark-candidato_b">X</span>
+            </div>
+        </div>
+
+        <div class="other-options">
+            <button id="btn-blank" data-vote="blancos" data-name="Voto en Blanco">Voto en Blanco</button>
+            <button id="btn-null" data-vote="nulos" data-name="Voto Nulo">Voto Nulo</button>
+            <button id="btn-nsnr" data-vote="nsnr" data-name="No Sabe / No Responde">NS / NR</button>
+        </div>
+
+        <div class="results-container">
+            <h2>Resultados en Tiempo Real</h2>
+            <canvas id="resultsChart"></canvas>
+            <div id="total-votes">Total encuestados: 0</div>
+        </div>
+
+        <div class="social-media">
+            <h3>Sigue la transmisión LIVE:</h3>
+            <a href="https://tiktok.com/" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="https://facebook.com/" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="https://youtube.com/" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+        </div>
+    </div>
+ 
+    <div id="notification" class="notification-toast"></div>
+</div>
+
+<footer id="footer-placeholder" class="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<script src="app.js"></script>
+<script src="include-footer.js"></script>
+
+</body>
+</html>

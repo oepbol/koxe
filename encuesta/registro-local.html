@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Encuestador Local</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>Registro de Encuestador Local</h1>
+            <p class="subtitle">Completa tus datos para generar tu panel de encuesta personalizado. La información se guardará únicamente en este navegador.</p>
+            
+            <form id="local-register-form" class="local-form">
+                <label for="encuestador-nombre">Tu Nombre Completo:</label>
+                <input type="text" id="encuestador-nombre" required style="text-transform: uppercase;">
+
+                <label for="tipo-comunidad">Tipo de Sondeo:</label>
+                <select id="tipo-comunidad" name="tipo-comunidad" required>
+                    <option value="" disabled selected>Selecciona un tipo...</option>
+                    <option value="MUNICIPIO">MUNICIPIO</option>
+                    <option value="DISTRITO">DISTRITO</option>
+                    <option value="ZONA">ZONA</option>
+                    <option value="CANTÓN">CANTÓN</option>
+                    <option value="COMUNIDAD">COMUNIDAD</option>
+                    <option value="BARRIO">BARRIO</option>
+                    <option value="CALLE">CALLE</option>
+                    <option value="FERIA">FERIA</option>
+                    <option value="MERCADO">MERCADO</option>
+                    <option value="FAMILIA">FAMILIA</option>
+                    <option value="GRUPO DE AMIGOS">GRUPO DE AMIGOS</option>
+                    <option value="EQUIPO DE TRABAJO">EQUIPO DE TRABAJO</option>
+                    <option value="CURSO">CURSO</option>
+                    <option value="OTRO">OTRO</option>
+                </select>
+
+                <div id="nombre-especifico-container" style="display: none;">
+                    <label for="nombre-especifico">Nombre Específico:</label>
+                    <input type="text" id="nombre-especifico" style="text-transform: uppercase;">
+                </div>
+
+                <label for="encuestador-enlace">Enlace del Video de Prueba (Opcional):</label>
+                <input type="url" id="encuestador-enlace" placeholder="https://tiktok.com/live/...">
+
+                <button type="submit">Guardar Datos y Empezar a Encuestar</button>
+            </form>
+        </div>
+    </div>
+    
+    <footer id="footer-placeholder" class="site-footer"></footer>
+    <script src="include-footer.js"></script>
+    <script>
+        const tipoComunidadSelect = document.getElementById('tipo-comunidad');
+        const nombreEspecificoContainer = document.getElementById('nombre-especifico-container');
+        const nombreEspecificoInput = document.getElementById('nombre-especifico');
+
+        tipoComunidadSelect.addEventListener('change', function() {
+            if (this.value) {
+                nombreEspecificoContainer.style.display = 'block';
+                nombreEspecificoInput.required = true;
+                nombreEspecificoInput.placeholder = 'Ej: ' + (this.value === 'OTRO' ? 'GIMNASIO' : '16 DE jULIO');
+            } else {
+                nombreEspecificoContainer.style.display = 'none';
+                nombreEspecificoInput.required = false;
+            }
+        });
+
+        document.getElementById('local-register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tipo = tipoComunidadSelect.value;
+            const nombre = nombreEspecificoInput.value;
+            const comunidadFinal = `${tipo} ${nombre}`;
+
+            const encuestador = {
+                nombre: document.getElementById('encuestador-nombre').value,
+                comunidad: comunidadFinal,
+                enlace: document.getElementById('encuestador-enlace').value
+            };
+            
+            localStorage.removeItem('votosEncuestaLocal');
+            localStorage.setItem('datosEncuestadorLocal', JSON.stringify(encuestador));
+            window.location.href = 'encuesta-local.html';
+        });
+    </script>
+</body>
+</html>

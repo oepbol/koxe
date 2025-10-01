@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Colaboradores</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .calendar-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .collaborator-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #28a745;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .collaborator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .collaborator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .collaborator-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+        
+        .collaborator-status {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            background: #28a745;
+            color: white;
+        }
+        
+        .collaborator-info {
+            margin-bottom: 12px;
+            color: #666;
+        }
+        
+        .collaborator-location {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 3px solid #007bff;
+        }
+        
+        .collaborator-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            background: #e9ecef;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .stat-number {
+            font-weight: bold;
+            color: #495057;
+            display: block;
+        }
+        
+        .departments-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .filter-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .filter-btn.active:hover {
+            background: #0056b3;
+        }
+        
+        .summary-stats {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .summary-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .no-collaborators {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>Calendario de Colaboradores Aprobados</h1>
+            <p class="subtitle">
+                Colaboradores oficiales autorizados para realizar encuestas en representación del proyecto.
+            </p>
+            
+            <!-- Estadísticas Resumen -->
+            <div class="summary-stats" id="summary-stats">
+                <div class="summary-item">
+                    <span class="summary-number" id="total-collaborators">0</span>
+                    <span>Colaboradores Activos</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-number" id="total-departments">0</span>
+                    <span>Departamentos</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-number" id="total-votes">0</span>
+                    <span>Votos Colaborativos</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-number" id="avg-votes">0</span>
+                    <span>Promedio por Colaborador</span>
+                </div>
+            </div>
+            
+            <!-- Filtros por Departamento -->
+            <div class="departments-filter" id="departments-filter">
+                <div class="filter-btn active" data-department="TODOS">TODOS</div>
+            </div>
+            
+            <!-- Lista de Colaboradores -->
+            <div class="calendar-container" id="collaborators-container">
+                <div class="loading">Cargando colaboradores...</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer id="footer-placeholder" class="site-footer"></footer>
+    
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="include-footer.js"></script>
+    
+    <script>
+        // Configuración Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBD-xQh9223xKez9wBqK2KJOGqF9yZjFo",
+            authDomain: "encuesta-f2a28.firebaseapp.com",
+            databaseURL: "https://encuesta-f2a28-default-rtdb.firebaseio.com",
+            projectId: "encuesta-f2a28",
+            storageBucket: "encuesta-f2a28.appspot.com",
+            messagingSenderId: "491969168385",
+            appId: "1:491969168385:web:f7b989b9aaf8562fd7ac00"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        const approvedRef = database.ref('approved_collaborators');
+        const collabVotesRef = database.ref('collaborative_votes');
+        
+        let allCollaborators = [];
+        let collaboratorVotes = {};
+        let currentFilter = 'TODOS';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCollaborators();
+            loadCollaboratorVotes();
+        });
+
+        function loadCollaborators() {
+            approvedRef.once('value', (snapshot) => {
+                allCollaborators = [];
+                const departments = new Set();
+                
+                snapshot.forEach((childSnapshot) => {
+                    const collaborator = childSnapshot.val();
+                    collaborator.id = childSnapshot.key;
+                    allCollaborators.push(collaborator);
+                    departments.add(collaborator.departamento);
+                });
+                
+                setupDepartmentFilters(Array.from(departments));
+                displayCollaborators();
+                updateSummaryStats();
+            });
+        }
+
+        function loadCollaboratorVotes() {
+            collabVotesRef.once('value', (snapshot) => {
+                collaboratorVotes = {};
+                
+                snapshot.forEach((childSnapshot) => {
+                    const votes = childSnapshot.val();
+                    const collaboratorId = childSnapshot.key;
+                    const totalVotes = Object.values(votes).reduce((sum, val) => sum + (val || 0), 0);
+                    collaboratorVotes[collaboratorId] = totalVotes;
+                });
+                
+                displayCollaborators();
+                updateSummaryStats();
+            });
+        }
+
+        function setupDepartmentFilters(departments) {
+            const filterContainer = document.getElementById('departments-filter');
+            
+            // Limpiar filtros existentes (excepto "TODOS")
+            const existingFilters = filterContainer.querySelectorAll('[data-department]:not([data-department="TODOS"])');
+            existingFilters.forEach(filter => filter.remove());
+            
+            // Agregar filtros de departamentos
+            departments.sort().forEach(dept => {
+                const filterBtn = document.createElement('div');
+                filterBtn.className = 'filter-btn';
+                filterBtn.setAttribute('data-department', dept);
+                filterBtn.textContent = dept;
+                filterBtn.addEventListener('click', () => filterByDepartment(dept));
+                filterContainer.appendChild(filterBtn);
+            });
+        }
+
+        function filterByDepartment(department) {
+            currentFilter = department;
+            
+            // Actualizar botones activos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-department="${department}"]`).classList.add('active');
+            
+            displayCollaborators();
+        }
+
+        function displayCollaborators() {
+            const container = document.getElementById('collaborators-container');
+            container.innerHTML = '';
+            
+            const filteredCollaborators = currentFilter === 'TODOS' 
+                ? allCollaborators 
+                : allCollaborators.filter(c => c.departamento === currentFilter);
+            
+            if (filteredCollaborators.length === 0) {
+                container.innerHTML = `
+                    <div class="no-collaborators">
+                        <h3>No hay colaboradores</h3>
+                        <p>No se encontraron colaboradores para el filtro seleccionado.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar por fecha de aprobación (más reciente primero)
+            filteredCollaborators.sort((a, b) => 
+                new Date(b.fecha_aprobacion) - new Date(a.fecha_aprobacion)
+            );
+            
+            filteredCollaborators.forEach(collaborator => {
+                const card = createCollaboratorCard(collaborator);
+                container.appendChild(card);
+            });
+        }
+
+        function createCollaboratorCard(collaborator) {
+            const card = document.createElement('div');
+            card.className = 'collaborator-card';
+            
+            const votes = collaboratorVotes[collaborator.id] || 0;
+            const daysActive = Math.floor((Date.now() - new Date(collaborator.fecha_aprobacion)) / (1000 * 60 * 60 * 24));
+            
+            card.innerHTML = `
+                <div class="collaborator-header">
+                    <h3 class="collaborator-name">${collaborator.nombre}</h3>
+                    <span class="collaborator-status">ACTIVO</span>
+                </div>
+                
+                <div class="collaborator-location">
+                    <strong>📍 ${collaborator.provincia}, ${collaborator.departamento}</strong>
+                </div>
+                
+                <div class="collaborator-info">
+                    <strong>ID:</strong> ${collaborator.id}
+                </div>
+                
+                <div class="collaborator-info">
+                    <strong>Email:</strong> ${collaborator.email}
+                </div>
+                
+                <div class="collaborator-info">
+                    <strong>Disponibilidad:</strong> ${collaborator.disponibilidad}
+                </div>
+                
+                <div class="collaborator-info">
+                    <strong>Aprobado:</strong> ${new Date(collaborator.fecha_aprobacion).toLocaleDateString('es-ES')}
+                </div>
+                
+                ${collaborator.redes ? `
+                    <div class="collaborator-info">
+                        <strong>Redes:</strong> <a href="${collaborator.redes}" target="_blank" style="color: #007bff;">Ver perfil</a>
+                    </div>
+                ` : ''}
+                
+                <div class="collaborator-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">${votes}</span>
+                        Votos Registrados
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">${daysActive}</span>
+                        Días Activo
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function updateSummaryStats() {
+            const totalCollaborators = allCollaborators.length;
+            const departments = new Set(allCollaborators.map(c => c.departamento));
+            const totalVotes = Object.values(collaboratorVotes).reduce((sum, votes) => sum + votes, 0);
+            const avgVotes = totalCollaborators > 0 ? Math.round(totalVotes / totalCollaborators) : 0;
+            
+            document.getElementById('total-collaborators').textContent = totalCollaborators;
+            document.getElementById('total-departments').textContent = departments.size;
+            document.getElementById('total-votes').textContent = totalVotes;
+            document.getElementById('avg-votes').textContent = avgVotes;
+        }
+
+        // Actualización automática cada 5 minutos
+        setInterval(() => {
+            loadCollaborators();
+            loadCollaboratorVotes();
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

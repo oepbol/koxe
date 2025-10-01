@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Colaborador</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div id="collab-login-container" class="login-container">
+    <div class="login-box">
+        <h2>Acceso de Colaborador</h2>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 20px;">
+            Ingrese las credenciales que recibió al ser aprobado como colaborador.
+        </p>
+        <form id="collab-login-form">
+            <input type="text" id="collaborator-id" placeholder="ID de Colaborador" required>
+            <input type="text" id="access-code" placeholder="Código de Acceso" required>
+            <button type="submit">Ingresar</button>
+            <p id="collab-login-error" class="login-error"></p>
+        </form>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="font-size: 0.9em; color: #666;">
+                ¿Aún no eres colaborador? 
+                <a href="/quiero-colaborar" style="color: #007bff; font-weight: bold;">Solicita ser colaborador</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="main-wrapper" id="collab-content" style="display: none;">
+    <div class="container">
+        <h2 id="collaborator-title">Panel de Colaborador</h2>
+        
+        <div id="collaborator-info" style="background: #d4edda; padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align: center;">
+            <!-- Se llenará con JavaScript -->
+        </div>
+        
+        <div class="ballot">
+            <div class="candidate-strip" data-vote="candidato_a" data-name="PDC Rodrigo Paz">
+                <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/PDC_FRANJA_uy0zel.png" alt="Papeleta PDC Rodrigo Paz">
+                <span class="x-mark" id="x-mark-candidato_a">X</span>
+            </div>
+
+            <div class="candidate-strip" data-vote="candidato_b" data-name="LIBRE Tuto Quiroga">
+                <img src="https://res.cloudinary.com/dwwinu5ml/image/upload/v1758743995/LIBRE_FRANJA_sr4686.png" alt="Papeleta LIBRE Tuto Quiroga">
+                <span class="x-mark" id="x-mark-candidato_b">X</span>
+            </div>
+        </div>
+
+        <div class="other-options">
+            <button id="btn-blank" data-vote="blancos" data-name="Voto en Blanco">Voto en Blanco</button>
+            <button id="btn-null" data-vote="nulos" data-name="Voto Nulo">Voto Nulo</button>
+            <button id="btn-nsnr" data-vote="nsnr" data-name="No Sabe / No Responde">NS / NR</button>
+        </div>
+
+        <div class="results-container">
+            <h2>Tus Resultados en Tiempo Real</h2>
+            <canvas id="resultsChart"></canvas>
+            <div id="total-votes">Total encuestados: 0</div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <button onclick="logoutCollaborator()" style="padding: 12px 25px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                Cerrar Sesión
+            </button>
+        </div>
+
+        <div class="social-media">
+            <h3>Sigue la transmisión LIVE del proyecto:</h3>
+            <a href="https://tiktok.com/" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="https://facebook.com/" target="_blank" title="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="https://youtube.com/" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>
+        </div>
+    </div>
+ 
+    <div id="notification" class="notification-toast"></div>
+</div>
+
+<footer id="footer-placeholder" class="site-footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="include-footer.js"></script>
+
+<script>
+    // Configuración Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyCBD-xQh9223xKez9wBqK2KJOGqF9yZjFo",
+        authDomain: "encuesta-f2a28.firebaseapp.com",
+        databaseURL: "https://encuesta-f2a28-default-rtdb.firebaseio.com",
+        projectId: "encuesta-f2a28",
+        storageBucket: "encuesta-f2a28.appspot.com",
+        messagingSenderId: "491969168385",
+        appId: "1:491969168385:web:f7b989b9aaf8562fd7ac00"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    const approvedCollabsRef = database.ref('approved_collaborators');
+    const collabVotesRef = database.ref('collaborative_votes');
+    const locationsRef = database.ref('locations');
+
+    let currentChart;
+    let isVoting = false;
+    let notificationTimeout;
+    let collaboratorData = null;
+    let currentVotesRef = null;
+
+    // Verificar si hay sesión activa
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedCollaborator = localStorage.getItem('currentCollaborator');
+        if (savedCollaborator) {
+            try {
+                collaboratorData = JSON.parse(savedCollaborator);
+                initializeCollaboratorPanel();
+            } catch (e) {
+                localStorage.removeItem('currentCollaborator');
+            }
+        }
+    });
+
+    // Login de colaborador
+    document.getElementById('collab-login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const collaboratorId = document.getElementById('collaborator-id').value.trim();
+        const accessCode = document.getElementById('access-code').value.trim();
+        const errorEl = document.getElementById('collab-login-error');
+        
+        errorEl.textContent = '';
+        
+        if (!collaboratorId || !accessCode) {
+            errorEl.textContent = 'Por favor complete todos los campos.';
+            return;
+        }
+        
+        // Verificar credenciales
+        approvedCollabsRef.child(collaboratorId).once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                errorEl.textContent = 'ID de colaborador no encontrado.';
+                return;
+            }
+            
+            const collaborator = snapshot.val();
+            if (collaborator.access_code !== accessCode) {
+                errorEl.textContent = 'Código de acceso incorrecto.';
+                return;
+            }
+            
+            // Login exitoso
+            collaboratorData = collaborator;
+            collaboratorData.collaborator_id = collaboratorId;
+            
+            // Guardar sesión
+            localStorage.setItem('currentCollaborator', JSON.stringify(collaboratorData));
+            
+            // Inicializar panel
+            initializeCollaboratorPanel();
+        });
+    });
+
+    function initializeCollaboratorPanel() {
+        // Ocultar login y mostrar contenido
+        document.getElementById('collab-login-container').style.display = 'none';
+        document.getElementById('collab-content').style.display = 'block';
+        
+        // Actualizar título e información
+        document.getElementById('collaborator-title').textContent = 
+            `Panel de Colaborador: ${collaboratorData.nombre}`;
+        
+        document.getElementById('collaborator-info').innerHTML = `
+            <strong>📍 Encuestando en:</strong> ${collaboratorData.provincia}, ${collaboratorData.departamento}<br>
+            <small style="color: #666;">ID: ${collaboratorData.collaborator_id}</small>
+        `;
+        
+        // Configurar referencia de votos
+        currentVotesRef = collabVotesRef.child(collaboratorData.collaborator_id);
+        
+        // Inicializar datos de votos si no existen
+        currentVotesRef.once('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                currentVotesRef.set({
+                    candidato_a: 0,
+                    candidato_b: 0,
+                    blancos: 0,
+                    nulos: 0,
+                    nsnr: 0
+                });
+            }
+        });
+        
+        // Configurar event listeners
+        const votingElements = document.querySelectorAll('.candidate-strip, .other-options button');
+        votingElements.forEach(element => {
+            element.addEventListener('click', () => registerVote(element));
+        });
+        
+        // Inicializar gráfico
+        initializeChart();
+        
+        // Escuchar cambios en votos
+        currentVotesRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            updateDisplay(data);
+        });
+    }
+
+    function registerVote(element) {
+        if (isVoting) return;
+        isVoting = true;
+
+        const voteType = element.dataset.vote;
+        let voteName = element.dataset.name;
+        let notificationMessage;
+
+        if (voteType === 'candidato_a') {
+            voteName = "Rodrigo Paz y Edmand Lara";
+            notificationMessage = `Usted ha Votado por <strong>${voteName}</strong>.<br><br>Tu voto se ha registrado exitosamente.`;
+        } else if (voteType === 'candidato_b') {
+            voteName = "Jorge Tuto Quiroga y Juan Pablo Velasco";
+            notificationMessage = `Usted ha Votado por <strong>${voteName}</strong>.<br><br>Tu voto se ha registrado exitosamente.`;
+        } else {
+            notificationMessage = `Usted ha registrado la opción <strong>${voteName}</strong>.<br><br>Tu voto se ha registrado exitosamente.`;
+        }
+
+        // Mostrar marca X
+        if (voteType.startsWith('candidato')) {
+            const xMark = document.getElementById(`x-mark-${voteType}`);
+            if (xMark) {
+                xMark.style.display = 'block';
+                setTimeout(() => { xMark.style.display = 'none'; }, 2000);
+            }
+        }
+
+        // Registrar voto
+        const voteUpdate = {};
+        voteUpdate[voteType] = firebase.database.ServerValue.increment(1);
+        currentVotesRef.update(voteUpdate);
+
+        // Registrar ubicación
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const locationData = {
+                    collaborator_id: collaboratorData.collaborator_id,
+                    collaborator_name: collaboratorData.nombre,
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    vote_type: voteType
+                };
+                locationsRef.push(locationData);
+            });
+        }
+
+        showNotification(notificationMessage);
+        playVoteSound();
+
+        setTimeout(() => { isVoting = false; }, 2000);
+    }
+
+    function playVoteSound() {
+        const message = new SpeechSynthesisUtterance("Gracias por participar");
+        message.lang = "es-ES";
+        window.speechSynthesis.speak(message);
+    }
+
+    function showNotification(message) {
+        const notificationEl = document.getElementById('notification');
+        clearTimeout(notificationTimeout);
+        notificationEl.innerHTML = message;
+        notificationEl.classList.add('show');
+        notificationTimeout = setTimeout(() => {
+            notificationEl.classList.remove('show');
+        }, 2000);
+    }
+
+    function initializeChart() {
+        Chart.register(ChartDataLabels);
+        const chartCanvas = document.getElementById('resultsChart');
+        
+        const chartConfig = {
+            type: 'bar',
+            data: {
+                labels: ['PDC Rodrigo Paz', 'LIBRE Tuto Quiroga', 'Blancos', 'Nulos', 'NS / NR'],
+                datasets: [{
+                    label: 'Votos',
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: ['#2F695F', '#D32F2F', '#FFFFFF', '#757575', '#ffc107'],
+                    borderColor: '#BDBDBD',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        color: 'blue',
+                        anchor: 'start',
+                        align: 'end',
+                        textAlign: 'center',
+                        offset: 8,
+                        formatter: function(value, context) {
+                            const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
+                            if (total === 0) return '0.0%';
+                            return (value / total * 100).toFixed(1) + '%';
+                        },
+                        font: { weight: 'bold' }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        };
+        
+        currentChart = new Chart(chartCanvas, chartConfig);
+    }
+
+    function updateDisplay(data) {
+        if (!data) return;
+        
+        const totalVotes = Object.values(data).reduce((sum, val) => sum + (val || 0), 0);
+        document.getElementById('total-votes').textContent = 
+            `Encuestados por ${collaboratorData.nombre}: ${totalVotes}`;
+
+        const originalData = [
+            { label: 'PDC Rodrigo Paz', value: data.candidato_a || 0, color: '#2F695F' },
+            { label: 'LIBRE Tuto Quiroga', value: data.candidato_b || 0, color: '#D32F2F' },
+            { label: 'Blancos', value: data.blancos || 0, color: '#FFFFFF' },
+            { label: 'Nulos', value: data.nulos || 0, color: '#757575' },
+            { label: 'NS / NR', value: data.nsnr || 0, color: '#ffc107' }
+        ];
+        
+        const sortedData = originalData.sort((a, b) => b.value - a.value);
+
+        if (currentChart) {
+            currentChart.data.labels = sortedData.map(item => item.label);
+            currentChart.data.datasets[0].data = sortedData.map(item => item.value);
+            currentChart.data.datasets[0].backgroundColor = sortedData.map(item => item.color);
+            currentChart.update();
+        }
+    }
+
+    function logoutCollaborator() {
+        if (confirm('¿Está seguro de cerrar sesión?')) {
+            localStorage.removeItem('currentCollaborator');
+            window.location.reload();
+        }
+    }
+</script>
+
+</body>
+</html>
